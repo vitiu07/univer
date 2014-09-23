@@ -38,28 +38,29 @@ class Trifid
     public void generateKeyTable(String key) throws Exception 
     {
         String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "; //english alphabet
-        
-        String removedDuplicates = key.replaceAll("(.)(?=.*?\\1)", "");
-        removedDuplicates = removedDuplicates.toUpperCase();
-        for( char c : removedDuplicates.toCharArray())
+        //adjustment of key
+        String removedDuplicates = key.replaceAll("(.)(?=.*?\\1)", ""); //remove duplicates
+        removedDuplicates = removedDuplicates.toUpperCase();//convert to uppercase
+        for( char c : removedDuplicates.toCharArray())//check if all symbols are in alphabet
         {
             char arr[] = new char[1];
             arr[0] = c;
             String s = new String(arr);
-            if(!(alphabet.contains(s)))
+            if(!(alphabet.contains(s))) // if 
             {
                 Exception e = new Exception("Ilegal characters in key! Use only letters or space");
                 throw e;
             }
         }
         alphabet = alphabet.concat(removedDuplicates);
+        //set key table consisting of adjusted (alphabet - key) U key
         keyTable = alphabet.replaceAll("(.)(?=.*?\\1)", "");
-        System.out.println(keyTable);
     }
-//    public String encrypt(String message)
-//    {
-//        
-//    }
+    public String encrypt(String message)
+    {
+        String encriptedMessage;
+        
+    }
 }
 
 
