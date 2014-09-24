@@ -42,6 +42,7 @@ public class Main extends javax.swing.JFrame {
         jButton2 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Trifid Chipher");
 
         keyField.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -143,7 +144,13 @@ public class Main extends javax.swing.JFrame {
     }//GEN-LAST:event_encryptFieldActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        // TODO add your handling code here:
+      try {
+            Trifid chiph = new Trifid();
+            chiph.generateKeyTable(keyField.getText());
+            plainField.setText(chiph.decrypt(encryptField.getText()));
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(rootPane, ex.getMessage(), "Error", JOptionPane.INFORMATION_MESSAGE);
+        }
     }//GEN-LAST:event_jButton2ActionPerformed
 
     /**
