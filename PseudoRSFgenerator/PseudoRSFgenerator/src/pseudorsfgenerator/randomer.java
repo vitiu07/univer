@@ -26,7 +26,7 @@ class Randomer
     }
     private byte[] generateSeed()
     {
-        byte seed[] = new byte[(int)(Math.log(BYTES)/Math.log(2.0))+1];
+        byte seed[] = new byte[(int)(Math.log(BYTES)/Math.log(2.0))*2];
         for(int i = 0;i<seed.length;i++)
         {
             long clock1 = System.currentTimeMillis();
