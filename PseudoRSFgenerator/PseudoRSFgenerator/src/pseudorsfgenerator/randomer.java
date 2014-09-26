@@ -4,60 +4,45 @@
  * and open the template in the editor.
  */
 package pseudorsfgenerator;
-
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
  * @author vicu
  */
-public class PseudoRSFgenerator {
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        Randomer r = new Randomer(8);
-        char c[] = r.getRandomString();
-        System.out.println(Arrays.toString(c));
-       };
-    }
-    
-
 
 class Randomer
 {
     int BYTES;
     Randomer(int bytes)
     {
-       BYTES = bytes;
+       BYTES = bytes + 1;
     }
-    public char[] getRandomString()
+    public byte[] getRandomString()
     {
-        char[] seed = generateSeed();
+        byte[] seed = generateSeed();
         LFSR block = new LFSR(seed, BYTES);
         return block.getEntireSequence();
     }
-    private char[] generateSeed()
+    private byte[] generateSeed()
     {
-        char seed[] = new char[(int)(Math.log(BYTES)/Math.log(2.0))+1];
+        byte seed[] = new byte[(int)(Math.log(BYTES)/Math.log(2.0))+1];
         for(int i = 0;i<seed.length;i++)
         {
             long clock1 = System.currentTimeMillis();
             long clock2 = System.nanoTime();
             AtomicLong at = new AtomicLong(clock2 % clock1);
-            seed[i] = (char) (clock1 * clock2 % at.decrementAndGet());
+            seed[i] = (byte) (clock1 * clock2 % at.decrementAndGet());
         }
         return seed;
     }
 }
-//linear Feedback shifted register simulation for an vector of char's
+//linear Feedback shifted register simulation for an vector of byte's
 class LFSR {
     private int OUT_BYTES= 0;
-    private char[] state;
-    private final int[] FUNCTION = new int[] {1, 31}; //linear function
-    LFSR (char[] seed,int bytes)
+    private byte[] state;
+    private final int[] FUNCTION = new int[] {0}; //linear function
+    LFSR (byte[] seed,int bytes)
     {
         OUT_BYTES = bytes;
         init_function(seed.length);
@@ -71,21 +56,21 @@ class LFSR {
         }
     }
     //fill first state with seed
-    private void init_state(char[] seed)
+    private void init_state(byte[] seed)
     {
-        state = new char[seed.length];
+        state = new byte[seed.length];
         int seed_length = seed.length;
         System.arraycopy(seed, 0, state, 0, seed_length);
     }
     //simulate one clock
-    public char nextOutput()
+    public byte nextOutput()
     {
-        char top_byte = state[state.length-1];
+        byte top_byte = state[state.length-1];
         int func_length = FUNCTION.length; 
         //compute feedback value
         for(int i=0;i<func_length; i++)
         {
-           top_byte  ^= state[state.length - FUNCTION[i]];
+           top_byte  ^= state[ FUNCTION[i]];
         }
         //shift ro right register
         for(int i = 0 ;i<state.length-1; i++)
@@ -97,10 +82,10 @@ class LFSR {
         return state[0];
     }
     //simultateOUT_BYTESclock and give entire sequence
-    public char[] getEntireSequence()
+    public byte[] getEntireSequence()
     {
-        char sequence[] = new char[OUT_BYTES];
-        for (int i = 0; i<OUT_BYTES;i++)
+        byte sequence[] = new byte[OUT_BYTES];
+        for (int i = 0; i<OUT_BYTES-1;i++)
         {
             sequence[i] = nextOutput();
         }
