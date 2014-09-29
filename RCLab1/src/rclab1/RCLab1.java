@@ -27,11 +27,64 @@ public class RCLab1 {
         try {
             PDVData p = new PDVData();
             p.readFromFile("pdv.txt");
-            System.out.println(p.getByType("FP"));
+            Scanner in = new Scanner(new File("network.txt"));
+            int nrOfNodes = Integer.parseInt(in.next());
+            double data[][] = new double[nrOfNodes][nrOfNodes];
+            while(in.hasNext())
+            {
+                String type = in.next();
+                int from = Integer.parseInt(in.next());
+                int to = Integer.parseInt(in.next());
+                String conType = in.next();
+                double length = Double.parseDouble(in.next());
+                PDVSpec pdv = p.getByType(conType);
+                if(type.equals("I"))
+                {
+                    data[from][to] = data[to][from] =
+                            pdv.getEnvirDelay()*length + pdv.getIntermediateBase();
+                    
+                }
+                else
+                {
+                    if (type.equals("S"))
+                            {
+                                data[from][to] = 
+                                        pdv.getEnvirDelay()*length + pdv.getLeftBase();
+                                data[to][from] = 
+                                        pdv.getEnvirDelay()*length + pdv.getRightBase();
+                            }
+                }
+                    
+            }
+           
+            double w[][] = new double[nrOfNodes][nrOfNodes];
+            // w = data;
+            FloydWarshall(data, w);
+            System.out.println("");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(RCLab1.class.getName()).log(Level.SEVERE, null, ex);
         }
          
+    }
+    static void  FloydWarshall(double w[][], double d[][])
+    {
+       // d = new double [w.length][w.length];
+        for(int i = 0; i<w.length; i++)
+        {
+            //System.arraycopy(w[i], 0, d[i], 0, w.length);
+            for (int j = 0; j < w.length; j++) {
+                d[i][j] = w[i][j]>0?w[i][j]:-223412412;
+                
+            }
+        }
+        for (int k = 0; k < w.length; k++) {
+            for (int i = 0; i < w.length; i++) {
+                for (int j = 0; j < w.length; j++) {
+                    if(i!=j)
+                    d[i][j] = Math.max(d[i][j],d[i][k] + d[k][j]);
+                }
+            }
+        }
     }
     
 }
@@ -58,6 +111,8 @@ class PDVData
             container.put(specs.getType(), specs);
         }
     }
+    
+   
     PDVSpec getByType(String type)
     {
         return (PDVSpec) container.get(type);
@@ -140,3 +195,4 @@ class PDVSpec
     private double MaxLen;
     
 }
+
