@@ -7,94 +7,220 @@ package rclab1;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.swing.JTextField;
 
 /**
  *
  * @author Budwar
  */
 public class RCLab1 {
-
-    
     /**
-     * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        try {
-            PDVData p = new PDVData();
-            p.readFromFile("pdv.txt");
-            Scanner in = new Scanner(new File("network.txt"));
-            int nrOfNodes = Integer.parseInt(in.next());
-            double data[][] = new double[nrOfNodes][nrOfNodes];
+    public final static double StandardPDV = 575;
+    public final static double StandardPVV = 49;
+    private PDVData PDVSpecifications;
+    private PVVData PVVSpecifications;
+    private int nrOfConcentrators;
+    private double ConcentratorsAdjacency[][];
+    private StationLink station_links[];
+    private int nrOfStations;
+    private int ConcentratorsPaths[][];
+    public void SetPDVFromFile(String filename) throws FileNotFoundException
+    {
+        PDVSpecifications = new PDVData();
+        PDVSpecifications.readFromFile(filename);
+    }
+    public void SetNetworkConcConnFromFile(String filename) throws FileNotFoundException
+    {
+        try (Scanner in = new Scanner(new File(filename))) {
+            nrOfConcentrators = Integer.parseInt(in.next());
+            ConcentratorsAdjacency = new double[nrOfConcentrators][nrOfConcentrators];
             while(in.hasNext())
             {
-                String type = in.next();
                 int from = Integer.parseInt(in.next());
                 int to = Integer.parseInt(in.next());
                 String conType = in.next();
                 double length = Double.parseDouble(in.next());
-                PDVSpec pdv = p.getByType(conType);
-                if(type.equals("I"))
-                {
-                    data[from][to] = data[to][from] =
-                            pdv.getEnvirDelay()*length + pdv.getIntermediateBase();
-                    
-                }
-                else
-                {
-                    if (type.equals("S"))
-                            {
-                                data[from][to] = 
-                                        pdv.getEnvirDelay()*length + pdv.getLeftBase();
-                                data[to][from] = 
-                                        pdv.getEnvirDelay()*length + pdv.getRightBase();
-                            }
-                }
-                    
-            }
-           
-            double w[][] = new double[nrOfNodes][nrOfNodes];
-            // w = data;
-            FloydWarshall(data, w);
-            System.out.println("");
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(RCLab1.class.getName()).log(Level.SEVERE, null, ex);
-        }
-         
-    }
-    static void  FloydWarshall(double w[][], double d[][])
-    {
-       // d = new double [w.length][w.length];
-        for(int i = 0; i<w.length; i++)
-        {
-            //System.arraycopy(w[i], 0, d[i], 0, w.length);
-            for (int j = 0; j < w.length; j++) {
-                d[i][j] = w[i][j]>0?w[i][j]:-223412412;
-                
-            }
-        }
-        for (int k = 0; k < w.length; k++) {
-            for (int i = 0; i < w.length; i++) {
-                for (int j = 0; j < w.length; j++) {
-                    if(i!=j)
-                    d[i][j] = Math.max(d[i][j],d[i][k] + d[k][j]);
-                }
+                PDVSpec pdv = PDVSpecifications.getByType(conType);
+                ConcentratorsAdjacency[from][to] = ConcentratorsAdjacency[to][from] =
+                        pdv.getEnvirDelay()*length + pdv.getIntermediateBase();
             }
         }
     }
     
+    public void SetStationLinksFromFile(String filename) throws FileNotFoundException
+    {
+        int counter = 0;
+        try (Scanner in = new Scanner(new File(filename))) {
+            nrOfStations = Integer.parseInt(in.next());
+            station_links = new StationLink[nrOfStations];
+            while(in.hasNext())
+            {
+                int from = Integer.parseInt(in.next());
+                int to = Integer.parseInt(in.next());
+                String conType = in.next();
+                double length = Double.parseDouble(in.next());
+                station_links[counter] = new StationLink(from, to, conType, length);
+                counter++;
+            }
+        }
+    }
+    public Node[] findMaxPDVPath(ComputedPath MaxPath)
+        {
+            ArrayList concentratorsPath = 
+                    GraphAlgorithms.
+                            FloydWarshallPath(MaxPath.getFirstLink().getConcentrator(), 
+                                    MaxPath.getLastLink().getConcentrator(), ConcentratorsPaths );
+            Node returnPath[] = new Node[concentratorsPath.size()+2];
+            returnPath[0] = new Node("S", MaxPath.getFirstLink().getStation()+1);
+            int counter = 1;
+            for(Object i : concentratorsPath)
+            {
+                returnPath[counter] = new Node("C", (int)i+1);
+                counter++;
+            }
+            returnPath[counter] = new Node("S", MaxPath.getLastLink().getStation()+1);
+            return returnPath;
+
+        }
+    
+    public ComputedPath computeMaxPDV()
+    {
+        double w[][] = new double[nrOfConcentrators][nrOfConcentrators];
+        ConcentratorsPaths = new int [nrOfConcentrators][nrOfConcentrators];
+        ComputedPath returnPath = new ComputedPath();
+        returnPath.setDistance(Double.NEGATIVE_INFINITY);
+        StationLink iLink;
+        //find max concentrators path
+        GraphAlgorithms.prim(0,ConcentratorsAdjacency,w);
+        GraphAlgorithms.FloydWarshall(w, w, ConcentratorsPaths);
+        
+        for(int i = 0;i<nrOfStations;i++)
+        {
+            iLink = station_links[i];
+            double leftPDV = 
+                    PDVSpecifications.getByType(iLink.getType()).getEnvirDelay() * iLink.getLength()+
+                    PDVSpecifications.getByType(iLink.getType()).getLeftBase();
+            for(int j = 0; j<nrOfStations; j++)
+            {
+                if(iLink.getStation()!=station_links[j].getStation())
+                {
+                    double rightPDV = station_links[j].getLength()*PDVSpecifications.getByType(station_links[j].getType()).getEnvirDelay()+
+                    PDVSpecifications.getByType(station_links[j].getType()).getRightBase();
+                    double full_length = 
+                            rightPDV+
+                            leftPDV +
+                            w[iLink.getConcentrator()][station_links[j].getConcentrator()];
+                    if(full_length > returnPath.getDistance())
+                    {
+                        returnPath.setDistance(full_length);
+                        returnPath.setFirstLink(iLink);
+                        returnPath.setLastLink(station_links[j]);
+                    }
+                }
+            }
+        }
+        return returnPath;
+    }
+
+    void SetPDVFromFile(JTextField pdvConfigField) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }
+
+
+
+class StationLink
+{
+
+    @Override
+    public String toString() {
+        return "StationLink{" + "Station=" + Station + ", Concentrator=" + Concentrator + ", type=" + type + ", length=" + length + '}';
+    }
+
+    public StationLink(int Station, int Concentrator, String type, double length) {
+        this.Station = Station;
+        this.Concentrator = Concentrator;
+        this.type = type;
+        this.length = length;
+    }
+
+    public int getStation() {
+        return Station;
+    }
+
+    public void setStation(int Station) {
+        this.Station = Station;
+    }
+
+    public int getConcentrator() {
+        return Concentrator;
+    }
+
+    public void setConcentrator(int Concentrator) {
+        this.Concentrator = Concentrator;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public double getLength() {
+        return length;
+    }
+
+    public void setLength(double length) {
+        this.length = length;
+    }
+    private int Station;
+    private int Concentrator;
+    private String type;
+    private double length;
+}
+
+
+class PVVData
+{
+    Map container;
+    PVVData()
+    {
+        container = new HashMap<>();
+    }
+    void readFromFile(String filename) throws FileNotFoundException
+    {
+        Scanner in = new Scanner(new File(filename));
+        while (in.hasNext())
+        {
+            PDVSpec specs = new PDVSpec();
+            specs.setType(in.next());
+            specs.setLeftBase(Double.parseDouble(in.next()));
+            specs.setIntermediateBase(Double.parseDouble(in.next()));
+            container.put(specs.getType(), specs);
+        }
+    }
+    
+   
+    PVVSpec getByType(String type)
+    {
+        return (PVVSpec) container.get(type);
+    }
+}
+
 
 class PDVData
 {
     Map container;
     PDVData()
     {
-        container = new HashMap<String,PDVSpec>();
+        container = new HashMap<>();
     }
     void readFromFile(String filename) throws FileNotFoundException
     {
@@ -119,25 +245,72 @@ class PDVData
     }
 }
 
-class PDVSpec
+
+class PDVSpec extends PVVSpec
+{
+
+    public PDVSpec() {
+        super();
+    }
+
+    @Override
+    public String toString() {
+        super.toString();
+        return "PDVSpec{" + "RightBase=" + RightBase + ", EnvirDelay=" + EnvirDelay + ", MaxLen=" + MaxLen + '}';
+    }
+
+    public PDVSpec(double RightBase, double EnvirDelay, double MaxLen, String Type, double LeftBase, double IntermediateBase) {
+        super(Type, LeftBase, IntermediateBase);
+        this.RightBase = RightBase;
+        this.EnvirDelay = EnvirDelay;
+        this.MaxLen = MaxLen;
+    }
+
+    public double getRightBase() {
+        return RightBase;
+    }
+
+    public void setRightBase(double RightBase) {
+        this.RightBase = RightBase;
+    }
+
+    public double getEnvirDelay() {
+        return EnvirDelay;
+    }
+
+    public void setEnvirDelay(double EnvirDelay) {
+        this.EnvirDelay = EnvirDelay;
+    }
+
+    public double getMaxLen() {
+        return MaxLen;
+    }
+
+    public void setMaxLen(double MaxLen) {
+        this.MaxLen = MaxLen;
+    }
+    
+    private double RightBase;
+    private double EnvirDelay;
+    private double MaxLen;
+}
+
+class PVVSpec
 {
 
     @Override
     public String toString() {
-        return "PDVSpec{" + "Type=" + Type + ", LeftBase=" + LeftBase + ", IntermediateBase=" + IntermediateBase + ", RightBase=" + RightBase + ", EnvirDelay=" + EnvirDelay + ", MaxLen=" + MaxLen + '}';
+        return "PDVSpec{" + "Type=" + Type + ", LeftBase=" + LeftBase + ", IntermediateBase=" + IntermediateBase + '}';
     }
-    public PDVSpec()
+    public PVVSpec()
     {
         this.Type = new String();
     }
 
-    public PDVSpec(String Type, double LeftBase, double IntermediateBase, double RightBase, double EnvirDelay, double MaxLen) {
+    public PVVSpec(String Type, double LeftBase, double IntermediateBase) {
         this.Type = Type;
         this.LeftBase = LeftBase;
         this.IntermediateBase = IntermediateBase;
-        this.RightBase = RightBase;
-        this.EnvirDelay = EnvirDelay;
-        this.MaxLen = MaxLen;
     }
 
     public String getType() {
@@ -152,18 +325,6 @@ class PDVSpec
         return IntermediateBase;
     }
 
-    public double getRightBase() {
-        return RightBase;
-    }
-
-    public double getEnvirDelay() {
-        return EnvirDelay;
-    }
-
-    public double getMaxLen() {
-        return MaxLen;
-    }
-
     public void setType(String Type) {
         this.Type = Type;
     }
@@ -175,24 +336,9 @@ class PDVSpec
     public void setIntermediateBase(double IntermediateBase) {
         this.IntermediateBase = IntermediateBase;
     }
-
-    public void setRightBase(double RightBase) {
-        this.RightBase = RightBase;
-    }
-
-    public void setEnvirDelay(double EnvirDelay) {
-        this.EnvirDelay = EnvirDelay;
-    }
-
-    public void setMaxLen(double MaxLen) {
-        this.MaxLen = MaxLen;
-    }
     private String Type;
     private double LeftBase;
     private double IntermediateBase;
-    private double RightBase;
-    private double EnvirDelay;
-    private double MaxLen;
     
 }
 
