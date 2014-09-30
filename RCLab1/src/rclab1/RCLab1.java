@@ -29,12 +29,38 @@ public class RCLab1 {
     private StationLink station_links[];
     private int nrOfStations;
     private int ConcentratorsPaths[][];
+    
+    public void SetPVVFromFile(String filename) throws FileNotFoundException
+    {
+        PVVSpecifications = new PVVData();
+        PVVSpecifications.readFromFile(filename);
+    }
+    
     public void SetPDVFromFile(String filename) throws FileNotFoundException
     {
         PDVSpecifications = new PDVData();
         PDVSpecifications.readFromFile(filename);
     }
-    public void SetNetworkConcConnFromFile(String filename) throws FileNotFoundException
+    
+    public void SetNetworkPVVConcentrFromFile(String filename) throws FileNotFoundException
+    {
+        try (Scanner in = new Scanner(new File(filename))) {
+            nrOfConcentrators = Integer.parseInt(in.next());
+            ConcentratorsAdjacency = new double[nrOfConcentrators][nrOfConcentrators];
+            while(in.hasNext())
+            {
+                int from = Integer.parseInt(in.next());
+                int to = Integer.parseInt(in.next());
+                String conType = in.next();
+                in.next();
+                PVVSpec pvv = PVVSpecifications.getByType(conType);
+                ConcentratorsAdjacency[from][to] = ConcentratorsAdjacency[to][from] =
+                        pvv.getIntermediateBase();
+            }
+        }
+    }
+    
+    public void SetNetworkPDVConcentrFromFile(String filename) throws FileNotFoundException
     {
         try (Scanner in = new Scanner(new File(filename))) {
             nrOfConcentrators = Integer.parseInt(in.next());
@@ -69,7 +95,7 @@ public class RCLab1 {
             }
         }
     }
-    public Node[] findMaxPDVPath(ComputedPath MaxPath)
+    public Node[] findMaxPath(ComputedPath MaxPath)
         {
             ArrayList concentratorsPath = 
                     GraphAlgorithms.
@@ -87,6 +113,40 @@ public class RCLab1 {
             return returnPath;
 
         }
+    
+    
+        public ComputedPath computeMaxPVV()
+    {
+        double w[][] = new double[nrOfConcentrators][nrOfConcentrators];
+        ConcentratorsPaths = new int [nrOfConcentrators][nrOfConcentrators];
+        ComputedPath returnPath = new ComputedPath();
+        returnPath.setDistance(Double.NEGATIVE_INFINITY);
+        StationLink iLink;
+        //find max concentrators path
+        GraphAlgorithms.prim(0,ConcentratorsAdjacency,w);
+        GraphAlgorithms.FloydWarshall(w, w, ConcentratorsPaths);
+        
+        for(int i = 0;i<nrOfStations;i++)
+        {
+            iLink = station_links[i];
+            double leftPVV = PVVSpecifications.getByType(iLink.getType()).getLeftBase();
+            for(int j = 0; j<nrOfStations; j++)
+            {
+                if(iLink.getStation()!=station_links[j].getStation())
+                {
+                    double full_length = 
+                            leftPVV + w[iLink.getConcentrator()][station_links[j].getConcentrator()];
+                    if(full_length > returnPath.getDistance())
+                    {
+                        returnPath.setDistance(full_length);
+                        returnPath.setFirstLink(iLink);
+                        returnPath.setLastLink(station_links[j]);
+                    }
+                }
+            }
+        }
+        return returnPath;
+    }
     
     public ComputedPath computeMaxPDV()
     {
@@ -148,7 +208,6 @@ class StationLink
         this.type = type;
         this.length = length;
     }
-
     public int getStation() {
         return Station;
     }

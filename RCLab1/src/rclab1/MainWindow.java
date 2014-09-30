@@ -6,10 +6,7 @@
 package rclab1;
 
 import java.awt.Color;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
@@ -66,6 +63,8 @@ public class MainWindow extends javax.swing.JFrame {
 
         jLabel2.setText("PVV Config File:");
 
+        pvvConfigField.setText("pvv.txt");
+
         jLabel3.setText("Network structure");
 
         jLabel4.setText("Network structure:");
@@ -114,6 +113,11 @@ public class MainWindow extends javax.swing.JFrame {
         });
 
         jButton6.setText("Compute PVV");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -167,11 +171,14 @@ public class MainWindow extends javax.swing.JFrame {
                                 .addComponent(jButton6)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(pvvPath, javax.swing.GroupLayout.PREFERRED_SIZE, 317, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(pvvValue, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 317, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(pdvPath, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 317, javax.swing.GroupLayout.PREFERRED_SIZE))))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
+            .addGroup(layout.createSequentialGroup()
+                .addGap(46, 46, 46)
+                .addComponent(pvvPath, javax.swing.GroupLayout.PREFERRED_SIZE, 317, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -211,11 +218,10 @@ public class MainWindow extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jButton6)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(pvvValue, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(3, 3, 3)
-                        .addComponent(pvvPath, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(pvvValue, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(pvvPath, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         jLabel1.getAccessibleContext().setAccessibleName("");
@@ -260,7 +266,7 @@ public class MainWindow extends javax.swing.JFrame {
             RCLab1 computations = new RCLab1();
             Node[] MaximalPath;
             computations.SetPDVFromFile(pdvConfigField.getText());
-            computations.SetNetworkConcConnFromFile(concentratorsField.getText());
+            computations.SetNetworkPDVConcentrFromFile(concentratorsField.getText());
             computations.SetStationLinksFromFile(stationsFiled.getText());
             ComputedPath maxpdv = computations.computeMaxPDV();
             if (maxpdv.getDistance()>RCLab1.StandardPDV)
@@ -272,7 +278,7 @@ public class MainWindow extends javax.swing.JFrame {
                 pdvValue.setForeground(Color.GREEN);
             }
             pdvValue.setText("PDV =  "+maxpdv.getDistance() + " bt");
-            MaximalPath = computations.findMaxPDVPath(maxpdv);
+            MaximalPath = computations.findMaxPath(maxpdv);
             pdvPath.setText("Path: ");
             for(Node nod : MaximalPath)
             {
@@ -284,6 +290,35 @@ public class MainWindow extends javax.swing.JFrame {
         }
        
     }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+                try {
+            RCLab1 computations = new RCLab1();
+            Node[] MaximalPath;
+            computations.SetPVVFromFile(pvvConfigField.getText());
+            computations.SetNetworkPVVConcentrFromFile(concentratorsField.getText());
+            computations.SetStationLinksFromFile(stationsFiled.getText());
+            ComputedPath maxpvv = computations.computeMaxPVV();
+            if (maxpvv.getDistance()>RCLab1.StandardPVV)
+            {
+                pvvValue.setForeground(Color.red);
+            }
+            else
+            {
+                pvvValue.setForeground(Color.GREEN);
+            }
+            pvvValue.setText("PVV =  "+maxpvv.getDistance() + " bt");
+            MaximalPath = computations.findMaxPath(maxpvv);
+            pvvPath.setText("Path: ");
+            for(Node nod : MaximalPath)
+            {
+                pvvPath.setText(pvvPath.getText()+nod.getType()+nod.getId()+"->");
+            }
+            pvvPath.setText(pvvPath.getText().substring(0, pvvPath.getText().length()-2));
+        } catch (FileNotFoundException ex) {
+            JOptionPane.showMessageDialog(rootPane, ex.getMessage(), "Error", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }//GEN-LAST:event_jButton6ActionPerformed
 
     /**
      * @param args the command line arguments
