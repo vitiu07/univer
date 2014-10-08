@@ -5,7 +5,6 @@
  */
 package des_cbc;
 
-import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -49,7 +48,7 @@ public class DES_CBC {
                 System.err.println("Get plain text:");
                 String input_text = in.next();
                 byte[] text = input_text.getBytes();
-                // Encrypt the text
+                // Encrypt the text=
                 byte[] textEncrypted = desCipher.doFinal(text);
                 System.out.println("Encryted text: " + textEncrypted);
                 // Initialize the same cipher for decryption
